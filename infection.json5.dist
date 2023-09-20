@@ -11,6 +11,5 @@
         "CastString": false,
         "NullSafeMethodCall": false,
         "NullSafePropertyCall": false
-    },
-    "minCoveredMsi": 80
+    }
 }
