@@ -178,7 +178,7 @@ final class Exporter
 
         foreach ((array) $object as $property => $value) {
             /** @psalm-suppress MixedArgumentTypeCoercion */
-            $code .= '"' . addslashes($property) . '"=>' . $this->exportMixed($value) . ',';
+            $code .= sprintf("'%s'=>%s,", addcslashes($property, "'\\"), $this->exportMixed($value));
         }
 
         return $code . ']';
