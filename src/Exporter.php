@@ -109,7 +109,7 @@ final class Exporter
         $this->objectVariables->attach($object, [$objectVariable, true]);
 
         if ($object instanceof \UnitEnum) {
-            return $objectVariable . '=' . var_export($object, true);
+            return sprintf('%s=\\%s::%s', $objectVariable, $object::class, $object->name);
         }
 
         if ($object instanceof \stdClass) {
