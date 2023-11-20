@@ -28,11 +28,12 @@ final class Hydrator
 
     /**
      * Populate.
+     *
      * @template T of object
      * @param T $object
      * @return T
      */
-    public function p(object $object, array $data): object
+    public function p(object $object, array $data = []): object
     {
         $reflectionClass = $this->reflectionClass($object::class);
 

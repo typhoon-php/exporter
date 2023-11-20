@@ -130,12 +130,12 @@ final class Exporter
         if (method_exists($object, '__serialize')) {
             /** @psalm-suppress MixedArgument */
             return sprintf(
-                '%s->p(%s=%s->i(\\%s::class),%s)',
+                '%s->p(%s=%s->i(\\%s::class)%s)',
                 $this->hydratorVariable(),
                 $objectVariable,
                 $this->hydratorVariable(),
                 $object::class,
-                $this->exportArray($object->__serialize()),
+                $this->dataArgument($this->exportArray($object->__serialize())),
             );
         }
 
@@ -145,22 +145,22 @@ final class Exporter
 
         if (method_exists($object, '__sleep')) {
             return sprintf(
-                '%s->p(%s=%s->i(\\%s::class),%s)',
+                '%s->p(%s=%s->i(\\%s::class)%s)',
                 $this->hydratorVariable(),
                 $objectVariable,
                 $this->hydratorVariable(),
                 $object::class,
-                $this->exportSleepData($object),
+                $this->dataArgument($this->exportSleepData($object)),
             );
         }
 
         return sprintf(
-            '%s->p(%s=%s->i(\\%s::class),%s)',
+            '%s->p(%s=%s->i(\\%s::class)%s)',
             $this->hydratorVariable(),
             $objectVariable,
             $this->hydratorVariable(),
             $object::class,
-            $this->exportToArrayData($object),
+            $this->dataArgument($this->exportObjectData($object)),
         );
     }
 
@@ -182,19 +182,19 @@ final class Exporter
         return $this->exportArray($data);
     }
 
-    private function exportToArrayData(object $object): string
+    private function exportObjectData(object $object): string
     {
         $code = '[';
         $first = true;
 
-        foreach ((array) $object as $property => $value) {
+        foreach ((array) $object as $key => $value) {
             if ($first) {
                 $first = false;
             } else {
                 $code .= ',';
             }
             /** @psalm-suppress MixedArgumentTypeCoercion */
-            $code .= sprintf("'%s'=>%s,", addcslashes($property, "'\\"), $this->exportMixed($value));
+            $code .= sprintf("'%s'=>%s,", addcslashes($key, "'\\"), $this->exportMixed($value));
         }
 
         return $code . ']';
@@ -209,5 +209,10 @@ final class Exporter
         $this->hydratorInitialized = true;
 
         return '($__h??=new \\' . Hydrator::class . ')';
+    }
+
+    private function dataArgument(string $data): string
+    {
+        return $data === '[]' ? '' : ',' . $data;
     }
 }
