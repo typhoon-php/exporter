@@ -73,14 +73,21 @@ final class Exporter
         }
 
         $code = '[';
+        $first = true;
         $list = array_is_list($array);
 
         foreach ($array as $key => $value) {
+            if ($first) {
+                $first = false;
+            } else {
+                $code .= ',';
+            }
+
             if (!$list) {
                 $code .= var_export($key, true) . '=>';
             }
 
-            $code .=  $this->exportMixed($value) . ',';
+            $code .=  $this->exportMixed($value);
         }
 
         return $code . ']';
@@ -175,8 +182,14 @@ final class Exporter
     private function exportToArrayData(object $object): string
     {
         $code = '[';
+        $first = true;
 
         foreach ((array) $object as $property => $value) {
+            if ($first) {
+                $first = false;
+            } else {
+                $code .= ',';
+            }
             /** @psalm-suppress MixedArgumentTypeCoercion */
             $code .= sprintf("'%s'=>%s,", addcslashes($property, "'\\"), $this->exportMixed($value));
         }
