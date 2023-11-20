@@ -12,14 +12,14 @@ final class Exporter
     private bool $hydratorInitialized = false;
 
     /**
-     * @var \SplObjectStorage<object, array{non-empty-string, int<1, max>}>
+     * @var \SplObjectStorage<object, array{non-empty-string, bool}>
      */
-    private \SplObjectStorage $objectCounter;
+    private \SplObjectStorage $objectVariables;
 
     private function __construct()
     {
-        /** @var \SplObjectStorage<object, array{non-empty-string, int<1, max>}> */
-        $this->objectCounter = new \SplObjectStorage();
+        /** @var \SplObjectStorage<object, array{non-empty-string, bool}> */
+        $this->objectVariables = new \SplObjectStorage();
     }
 
     public static function export(mixed $value): string
@@ -27,10 +27,10 @@ final class Exporter
         $exporter = new self();
         $code = $exporter->exportMixed($value);
 
-        foreach ($exporter->objectCounter as $_object) {
-            [$objectVariable, $objectCount] = $exporter->objectCounter->getInfo();
+        foreach ($exporter->objectVariables as $_object) {
+            [$objectVariable, $remove] = $exporter->objectVariables->getInfo();
 
-            if ($objectCount > 1) {
+            if (!$remove) {
                 continue;
             }
 
@@ -95,15 +95,18 @@ final class Exporter
 
     private function exportObject(object $object): string
     {
-        if ($this->objectCounter->contains($object)) {
-            [$objectVariable, $objectCount] = $this->objectCounter[$object];
-            $this->objectCounter->attach($object, [$objectVariable, $objectCount + 1]);
+        if ($this->objectVariables->contains($object)) {
+            [$objectVariable, $first] = $this->objectVariables[$object];
+
+            if ($first) {
+                $this->objectVariables->attach($object, [$objectVariable, false]);
+            }
 
             return $objectVariable;
         }
 
-        $objectVariable = '$__o' . dechex($this->objectCounter->count());
-        $this->objectCounter->attach($object, [$objectVariable, 1]);
+        $objectVariable = '$__o' . dechex($this->objectVariables->count());
+        $this->objectVariables->attach($object, [$objectVariable, true]);
 
         if ($object instanceof \UnitEnum) {
             return $objectVariable . '=' . var_export($object, true);
