@@ -9,40 +9,35 @@ namespace Typhoon\Exporter;
  */
 final class Exporter
 {
+    private const OBJECT_VARIABLE_KEY = '\'\'';
+
     private bool $hydratorInitialized = false;
 
     /**
-     * @var \SplObjectStorage<object, array{non-empty-string, bool}>
+     * @var \SplObjectStorage<object, non-empty-string>
      */
     private \SplObjectStorage $objectVariables;
 
+    /**
+     * @var array<string, ''>
+     */
+    private array $tempObjectVariables = [];
+
     private function __construct()
     {
-        /** @var \SplObjectStorage<object, array{non-empty-string, bool}> */
+        /** @var \SplObjectStorage<object, non-empty-string> */
         $this->objectVariables = new \SplObjectStorage();
     }
 
     public static function export(mixed $value): string
     {
         $exporter = new self();
-        $code = $exporter->exportMixed($value);
 
-        foreach ($exporter->objectVariables as $_object) {
-            [$objectVariable, $remove] = $exporter->objectVariables->getInfo();
-
-            if (!$remove) {
-                continue;
-            }
-
-            $replaceCount = 0;
-            $newCode = str_replace($objectVariable . '=', '', $code, $replaceCount);
-
-            if ($replaceCount === 1) {
-                $code = $newCode;
-            }
-        }
-
-        return $code;
+        return preg_replace_callback(
+            sprintf('/%s(\$__o[0-9a-f]+)=/', self::OBJECT_VARIABLE_KEY),
+            static fn (array $matches): string => $exporter->tempObjectVariables[$matches[1]] ?? $matches[1] . '=',
+            $exporter->exportMixed($value),
+        );
     }
 
     private function exportMixed(mixed $value): string
@@ -96,17 +91,16 @@ final class Exporter
     private function exportObject(object $object): string
     {
         if ($this->objectVariables->contains($object)) {
-            [$objectVariable, $first] = $this->objectVariables[$object];
-
-            if ($first) {
-                $this->objectVariables->attach($object, [$objectVariable, false]);
-            }
+            $objectVariable = $this->objectVariables[$object];
+            unset($this->tempObjectVariables[$objectVariable]);
 
             return $objectVariable;
         }
 
         $objectVariable = '$__o' . dechex($this->objectVariables->count());
-        $this->objectVariables->attach($object, [$objectVariable, true]);
+        $this->objectVariables->attach($object, $objectVariable);
+        $this->tempObjectVariables[$objectVariable] = '';
+        $objectVariable = self::OBJECT_VARIABLE_KEY . $objectVariable;
 
         if ($object instanceof \UnitEnum) {
             return sprintf('%s=\\%s::%s', $objectVariable, $object::class, $object->name);
@@ -194,7 +188,7 @@ final class Exporter
                 $code .= ',';
             }
             /** @psalm-suppress MixedArgumentTypeCoercion */
-            $code .= sprintf("'%s'=>%s,", addcslashes($key, "'\\"), $this->exportMixed($value));
+            $code .= sprintf("'%s'=>%s", addcslashes($key, "'\\"), $this->exportMixed($value));
         }
 
         return $code . ']';
