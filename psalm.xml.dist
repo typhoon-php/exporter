@@ -58,7 +58,6 @@
                 <directory name="tests"/>
             </errorLevel>
         </UnusedMethodCall>
-        <UnresolvableInclude type="suppress" errorLevel="suppress"/>
     </issueHandlers>
 
     <forbiddenFunctions>
