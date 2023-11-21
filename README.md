@@ -1,7 +1,7 @@
 # Typhoon Exporter
 
-[![Latest Stable Version](https://poser.pugx.org/typhoon-php/exporter/v/stable.png)](https://packagist.org/packages/typhoon-php/exporter)
-[![Total Downloads](https://poser.pugx.org/typhoon-php/exporter/downloads.png)](https://packagist.org/packages/typhoon-php/exporter)
+[![Latest Stable Version](https://poser.pugx.org/typhoon/exporter/v/stable.png)](https://packagist.org/packages/typhoon/exporter)
+[![Total Downloads](https://poser.pugx.org/typhoon/exporter/downloads.png)](https://packagist.org/packages/typhoon/exporter)
 [![psalm-level](https://shepherd.dev/github/typhoon-php/exporter/level.svg)](https://shepherd.dev/github/typhoon-php/exporter)
 [![type-coverage](https://shepherd.dev/github/typhoon-php/exporter/coverage.svg)](https://shepherd.dev/github/typhoon-php/exporter)
 [![Code Coverage](https://codecov.io/gh/typhoon-php/exporter/branch/0.2.x/graph/badge.svg)](https://codecov.io/gh/typhoon-php/exporter/tree/0.2.x)
