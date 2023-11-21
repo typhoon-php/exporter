@@ -54,7 +54,7 @@ final class Exporter
             return $this->exportArray($value);
         }
 
-        if (\is_object($value)) {
+        if (\is_object($value) && !$value instanceof \Closure) {
             return $this->exportObject($value);
         }
 

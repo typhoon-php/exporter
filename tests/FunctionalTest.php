@@ -10,7 +10,7 @@ use PHPUnit\Framework\TestCase;
 
 #[CoversClass(Exporter::class)]
 #[CoversClass(Hydrator::class)]
-final class ExporterTest extends TestCase
+final class FunctionalTest extends TestCase
 {
     public static function values(): \Generator
     {
@@ -60,6 +60,20 @@ final class ExporterTest extends TestCase
         $imported = eval('return ' . $exported . ';');
 
         self::assertEquals($value, $imported);
+    }
+
+    public function testItThrowsOnClosure(): void
+    {
+        $this->expectExceptionObject(new \InvalidArgumentException('Export of Closure is not supported.'));
+
+        Exporter::export(static fn (): bool => true);
+    }
+
+    public function testItThrowsOnResource(): void
+    {
+        $this->expectExceptionObject(new \InvalidArgumentException('Export of resource (stream) is not supported.'));
+
+        Exporter::export(fopen(__FILE__, 'r'));
     }
 
     public function testItExportsSplObjectStorage(): void
