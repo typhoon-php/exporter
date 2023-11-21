@@ -34,7 +34,7 @@ final class Exporter
         $exporter = new self();
 
         return preg_replace_callback(
-            sprintf('/%s(\$__o[0-9a-f]+)=/', self::OBJECT_VARIABLE_KEY),
+            sprintf('/%s(\$o[0-9a-f]+)=/', self::OBJECT_VARIABLE_KEY),
             static fn (array $matches): string => $exporter->tempObjectVariables[$matches[1]] ?? $matches[1] . '=',
             $exporter->exportMixed($value),
         );
@@ -197,12 +197,12 @@ final class Exporter
     private function hydratorVariable(): string
     {
         if ($this->hydratorInitialized) {
-            return '$__h';
+            return '$h';
         }
 
         $this->hydratorInitialized = true;
 
-        return '($__h??=new \\' . Hydrator::class . ')';
+        return '($h??=new \\' . Hydrator::class . ')';
     }
 
     private function dataArgument(string $data): string
