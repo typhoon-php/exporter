@@ -40,4 +40,22 @@ final class ExporterTest extends TestCase
 
         self::assertStringNotContainsString('$', $code);
     }
+
+    public function testListAreExportedWithoutKeys(): void
+    {
+        $list = [1, 2, 3];
+
+        $code = Exporter::export($list);
+
+        self::assertSame('[1,2,3]', $code);
+    }
+
+    public function testHydratorIsInitializedOnlyOnce(): void
+    {
+        $objects = [new \ArrayObject(), new \ArrayObject()];
+
+        $code = Exporter::export($objects);
+
+        self::assertSame(1, substr_count($code, 'new \\'.Hydrator::class));
+    }
 }
