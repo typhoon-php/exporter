@@ -5,9 +5,14 @@
             "src"
         ]
     },
+    "logs": {
+        "stryker": {
+            "report": "/^\\d+\\.\\d+\\.x$/"
+        }
+    },
     "tmpDir": "var",
+    "minMsi": 72,
     "mutators": {
         "@default": true
     },
-    "minMsi": 72
 }
