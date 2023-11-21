@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Typhoon\Exporter;
 
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\TestWith;
 use PHPUnit\Framework\TestCase;
 
 #[CoversClass(Exporter::class)]
@@ -56,6 +57,23 @@ final class ExporterTest extends TestCase
 
         $code = Exporter::export($objects);
 
-        self::assertSame(1, substr_count($code, 'new \\'.Hydrator::class));
+        self::assertSame(1, substr_count($code, 'new \\' . Hydrator::class));
+    }
+
+    /**
+     * @param positive-int $index
+     */
+    #[TestWith([0, '$o0'])]
+    #[TestWith([10, '$oA'])]
+    #[TestWith([11, '$oB'])]
+    #[TestWith([62, '$o_'])]
+    #[TestWith([63, '$o10'])]
+    #[TestWith([64, '$o11'])]
+    #[TestWith([250046, '$o___'])]
+    public function testObjectVariable(int $index, string $variable): void
+    {
+        $actual = Exporter::objectVariable($index);
+
+        self::assertSame($variable, $actual);
     }
 }

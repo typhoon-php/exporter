@@ -10,6 +10,7 @@ namespace Typhoon\Exporter;
 final class Exporter
 {
     private const OBJECT_VARIABLE_KEY = '\'\'';
+    private const OBJECT_VARIABLE_ALPHABET = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_';
 
     private bool $hydratorInitialized = false;
 
@@ -38,6 +39,25 @@ final class Exporter
             static fn (array $matches): string => $exporter->tempObjectVariables[$matches[1]] ?? $matches[1] . '=',
             $exporter->exportMixed($value),
         );
+    }
+
+    /**
+     * @internal
+     * @psalm-internal Typhoon\Exporter
+     * @psalm-pure
+     * @param positive-int $index
+     * @return non-empty-string
+     */
+    public static function objectVariable(int $index): string
+    {
+        $result = '';
+
+        do {
+            $result = self::OBJECT_VARIABLE_ALPHABET[$index % 63] . $result;
+            $index = intdiv($index, 63);
+        } while ($index > 0);
+
+        return '$o' . $result;
     }
 
     private function exportMixed(mixed $value): string
@@ -97,7 +117,9 @@ final class Exporter
             return $objectVariable;
         }
 
-        $objectVariable = $this->objectVariable($this->objectVariables->count());
+        /** @var positive-int */
+        $objectIndex = $this->objectVariables->count();
+        $objectVariable = self::objectVariable($objectIndex);
         $this->objectVariables->attach($object, $objectVariable);
         $this->tempObjectVariables[$objectVariable] = '';
         $objectVariable = self::OBJECT_VARIABLE_KEY . $objectVariable;
@@ -208,13 +230,5 @@ final class Exporter
     private function dataArgument(string $data): string
     {
         return $data === '[]' ? '' : ',' . $data;
-    }
-
-    /**
-     * @return non-empty-string
-     */
-    private function objectVariable(int $index): string
-    {
-        return '$o' . base_convert((string) $index, 10, 36);
     }
 }
