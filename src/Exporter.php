@@ -34,7 +34,7 @@ final class Exporter
         $exporter = new self();
 
         return preg_replace_callback(
-            sprintf('/%s(\$o[0-9a-f]+)=/', self::OBJECT_VARIABLE_KEY),
+            sprintf('/%s(\$o[a-zA-Z0-9]+)=/', self::OBJECT_VARIABLE_KEY),
             static fn (array $matches): string => $exporter->tempObjectVariables[$matches[1]] ?? $matches[1] . '=',
             $exporter->exportMixed($value),
         );
@@ -97,7 +97,7 @@ final class Exporter
             return $objectVariable;
         }
 
-        $objectVariable = '$__o' . dechex($this->objectVariables->count());
+        $objectVariable = $this->objectVariable($this->objectVariables->count());
         $this->objectVariables->attach($object, $objectVariable);
         $this->tempObjectVariables[$objectVariable] = '';
         $objectVariable = self::OBJECT_VARIABLE_KEY . $objectVariable;
@@ -208,5 +208,13 @@ final class Exporter
     private function dataArgument(string $data): string
     {
         return $data === '[]' ? '' : ',' . $data;
+    }
+
+    /**
+     * @return non-empty-string
+     */
+    private function objectVariable(int $index): string
+    {
+        return '$o' . base_convert((string) $index, 10, 36);
     }
 }
