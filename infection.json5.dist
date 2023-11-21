@@ -11,7 +11,7 @@
         }
     },
     "tmpDir": "var",
-    "minMsi": 73,
+    "minMsi": 78,
     "mutators": {
         "@default": true
     },
