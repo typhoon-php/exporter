@@ -76,4 +76,16 @@ final class ExporterTest extends TestCase
 
         self::assertStringNotContainsString('$', $code);
     }
+
+    public function testItRemovesAllNeedlessObjectVariables(): void
+    {
+        $value = [];
+        for ($i = 0; $i < 1000; ++$i) {
+            $value[] = new \stdClass();
+        }
+
+        $code = Exporter::export($value);
+
+        self::assertStringNotContainsString('$', $code);
+    }
 }
