@@ -13,7 +13,7 @@ $finder = PhpCsFixer\Finder::create()
         __FILE__,
     ])
     ->exclude([
-        'unit/values',
+        'values',
     ]);
 
 $config = (new PhpCsFixer\Config())

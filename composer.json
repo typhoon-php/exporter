@@ -33,7 +33,7 @@
     },
     "autoload-dev": {
         "psr-4": {
-            "Typhoon\\Exporter\\": "tests/unit"
+            "Typhoon\\Exporter\\": "tests"
         }
     },
     "config": {

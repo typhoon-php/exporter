@@ -29,7 +29,7 @@
         <directory name="src"/>
         <directory name="tests"/>
         <ignoreFiles>
-            <directory name="tests/unit/values"/>
+            <directory name="tests/values"/>
             <directory name="var"/>
             <directory name="vendor"/>
         </ignoreFiles>
