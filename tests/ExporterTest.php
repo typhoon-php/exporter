@@ -11,13 +11,21 @@ use PHPUnit\Framework\TestCase;
 #[CoversClass(Exporter::class)]
 final class ExporterTest extends TestCase
 {
-    public function testListAreExportedWithoutKeys(): void
+    #[TestWith([null, 'null'])]
+    #[TestWith([true, 'true'])]
+    #[TestWith([false, 'false'])]
+    #[TestWith([123456, '123456'])]
+    #[TestWith([M_E, '2.718281828459045'])]
+    #[TestWith(['string', "'string'"])]
+    #[TestWith([[], '[]'])]
+    #[TestWith([[1, 2, 3], '[1,2,3]'])]
+    #[TestWith([['a' => 1, 'b' => []], "['a'=>1,'b'=>[]]"])]
+    #[TestWith([new \stdClass(), 'new \\stdClass'])]
+    public function testItExportsValuesAsExpected(mixed $value, string $expectedCode): void
     {
-        $list = [1, 2, 3];
+        $code = Exporter::export($value);
 
-        $code = Exporter::export($list);
-
-        self::assertSame('[1,2,3]', $code);
+        self::assertSame($expectedCode, $code);
     }
 
     public function testHydratorIsInitializedOnlyOnce(): void
@@ -29,24 +37,7 @@ final class ExporterTest extends TestCase
         self::assertSame(1, substr_count($code, 'new \\' . Hydrator::class));
     }
 
-    /**
-     * @param positive-int $index
-     */
-    #[TestWith([0, '$o0'])]
-    #[TestWith([10, '$oA'])]
-    #[TestWith([11, '$oB'])]
-    #[TestWith([62, '$o_'])]
-    #[TestWith([63, '$o10'])]
-    #[TestWith([64, '$o11'])]
-    #[TestWith([250046, '$o___'])]
-    public function testObjectVariable(int $index, string $variable): void
-    {
-        $actual = Exporter::objectVariable($index);
-
-        self::assertSame($variable, $actual);
-    }
-
-    public function testItDeclaresVariableWhenObjectIsReused(): void
+    public function testItDeclaresVariableForReusedObject(): void
     {
         $object = new \stdClass();
 
@@ -55,37 +46,64 @@ final class ExporterTest extends TestCase
         self::assertStringContainsString('$', $code);
     }
 
-    public function testItDoesNotRemoveStringThatLooksLikeObjectVariable(): void
-    {
-        $object = new \stdClass();
-        $codeWithVariable = Exporter::export([$object, $object]);
-        preg_match('/\$\w+=/', $codeWithVariable, $matches);
-        $variableDeclaration = $matches[0];
-        $object->property = $variableDeclaration;
-
-        $code = Exporter::export($object);
-
-        self::assertStringContainsString($variableDeclaration, $code);
-    }
-
-    public function testItRemovesNeedlessObjectVariable(): void
-    {
-        $object = new \stdClass();
-
-        $code = Exporter::export($object);
-
-        self::assertStringNotContainsString('$', $code);
-    }
-
-    public function testItRemovesAllNeedlessObjectVariables(): void
+    #[TestWith([0, '0'])]
+    #[TestWith([1, '1'])]
+    #[TestWith([10, 'A'])]
+    #[TestWith([11, 'B'])]
+    #[TestWith([61, 'z'])]
+    #[TestWith([62, '_'])]
+    #[TestWith([63, '10'])]
+    #[TestWith([64, '11'])]
+    #[TestWith([63 ** 2 - 1, '__'])]
+    public function testItUses63SymbolAlphabetForObjectVariables(int $index, string $base63Number): void
     {
         $value = [];
-        for ($i = 0; $i < 1000; ++$i) {
-            $value[] = new \stdClass();
+        for ($i = 0; $i <= $index; ++$i) {
+            $value[] = $value[] = new \stdClass();
         }
 
         $code = Exporter::export($value);
 
-        self::assertStringNotContainsString('$', $code);
+        self::assertSame(1, preg_match('/^.*\K(?<=\$o)\w+(?==)/', $code, $matches));
+        self::assertSame($base63Number, $matches[0]);
+    }
+
+    public function testItKeepsStringsThatLookLikeObjectVariableDeclarations(): void
+    {
+        $object = new \stdClass();
+        $codeWithVariable = Exporter::export([$object, $object]);
+        self::assertSame(1, preg_match('/(\$\w+)=/', $codeWithVariable, $matches));
+        $variable = $matches[1];
+        $variableWithEquals = $matches[0];
+        $object->property = $variable;
+        $object->property2 = $variableWithEquals;
+
+        $code = Exporter::export($object);
+
+        self::assertStringContainsString($variable, $code);
+        self::assertStringContainsString($variableWithEquals, $code);
+    }
+
+    public function testItCorrectlyAssignsObjectVariables(): void
+    {
+        $o0 = new \stdClass();
+        $o1 = new \stdClass();
+        $value = [
+            new \stdClass(),
+            $o0,
+            $o1,
+            new \stdClass(),
+            $o0,
+            $o1,
+            new \stdClass(),
+            $o1,
+            $o0,
+            new \stdClass(),
+        ];
+
+        $code = Exporter::export($value);
+
+        self::assertNotFalse(preg_match_all('/\$o\w+=?/', $code, $matches, PREG_SET_ORDER));
+        self::assertSame(['$o0=', '$o1=', '$o0', '$o1', '$o1', '$o0'], array_column($matches, 0));
     }
 }

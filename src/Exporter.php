@@ -9,25 +9,20 @@ namespace Typhoon\Exporter;
  */
 final class Exporter
 {
-    private const OBJECT_VARIABLE_KEY = '\'\'';
     private const OBJECT_VARIABLE_ALPHABET = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_';
 
     private bool $hydratorInitialized = false;
 
-    /**
-     * @var \SplObjectStorage<object, non-empty-string>
-     */
-    private \SplObjectStorage $objectVariables;
+    private \SplObjectStorage $objects;
 
     /**
-     * @var array<string, ''>
+     * @var array<int, non-empty-string>
      */
-    private array $tempObjectVariables = [];
+    private array $objectVariablesById = [];
 
     private function __construct()
     {
-        /** @var \SplObjectStorage<object, non-empty-string> */
-        $this->objectVariables = new \SplObjectStorage();
+        $this->objects = new \SplObjectStorage();
     }
 
     public static function export(mixed $value): string
@@ -35,29 +30,14 @@ final class Exporter
         $exporter = new self();
 
         return preg_replace_callback(
-            sprintf('/%s(\$o\w+)=/', self::OBJECT_VARIABLE_KEY),
-            static fn (array $matches): string => $exporter->tempObjectVariables[$matches[1]] ?? $matches[1] . '=',
+            "/''(\\d+)''=/",
+            static function (array $matches) use ($exporter): string {
+                $id = (int) $matches[1];
+
+                return isset($exporter->objectVariablesById[$id]) ? $exporter->objectVariablesById[$id] . '=' : '';
+            },
             $exporter->exportMixed($value),
         );
-    }
-
-    /**
-     * @internal
-     * @psalm-internal Typhoon\Exporter
-     * @psalm-pure
-     * @param positive-int $index
-     * @return non-empty-string
-     */
-    public static function objectVariable(int $index): string
-    {
-        $result = '';
-
-        do {
-            $result = self::OBJECT_VARIABLE_ALPHABET[$index % 63] . $result;
-            $index = intdiv($index, 63);
-        } while ($index > 0);
-
-        return '$o' . $result;
     }
 
     private function exportMixed(mixed $value): string
@@ -110,35 +90,30 @@ final class Exporter
 
     private function exportObject(object $object): string
     {
-        if ($this->objectVariables->contains($object)) {
-            $objectVariable = $this->objectVariables[$object];
-            unset($this->tempObjectVariables[$objectVariable]);
+        $id = spl_object_id($object);
 
-            return $objectVariable;
+        if ($this->objects->contains($object)) {
+            return $this->objectVariablesById[$id] ??= $this->nextObjectVariable();
         }
 
-        /** @var positive-int */
-        $objectIndex = $this->objectVariables->count();
-        $objectVariable = self::objectVariable($objectIndex);
-        $this->objectVariables->attach($object, $objectVariable);
-        $this->tempObjectVariables[$objectVariable] = '';
-        $objectVariable = self::OBJECT_VARIABLE_KEY . $objectVariable;
+        $this->objects->attach($object);
+        $placeholder = "''{$id}''";
 
         if ($object instanceof \UnitEnum) {
-            return sprintf('%s=\\%s::%s', $objectVariable, $object::class, $object->name);
+            return sprintf('%s=\\%s::%s', $placeholder, $object::class, $object->name);
         }
 
         if ($object instanceof \stdClass) {
             $data = (array) $object;
 
             if ($data === []) {
-                return $objectVariable . '=new \stdClass';
+                return $placeholder . '=new \stdClass';
             }
 
             return sprintf(
                 '%s->p(%s=new \stdClass,%s)',
                 $this->hydratorVariable(),
-                $objectVariable,
+                $placeholder,
                 $this->exportArray($data),
             );
         }
@@ -148,7 +123,7 @@ final class Exporter
             return sprintf(
                 '%s->p(%s=%s->i(\\%s::class)%s)',
                 $this->hydratorVariable(),
-                $objectVariable,
+                $placeholder,
                 $this->hydratorVariable(),
                 $object::class,
                 $this->dataArgument($this->exportArray($object->__serialize())),
@@ -156,14 +131,14 @@ final class Exporter
         }
 
         if ($object instanceof \DatePeriod || $object instanceof \Serializable) {
-            return sprintf('%s=unserialize(%s)', $objectVariable, var_export(serialize($object), true));
+            return sprintf('%s=unserialize(%s)', $placeholder, var_export(serialize($object), true));
         }
 
         if (method_exists($object, '__sleep')) {
             return sprintf(
                 '%s->p(%s=%s->i(\\%s::class)%s)',
                 $this->hydratorVariable(),
-                $objectVariable,
+                $placeholder,
                 $this->hydratorVariable(),
                 $object::class,
                 $this->dataArgument($this->exportSleepData($object)),
@@ -173,7 +148,7 @@ final class Exporter
         return sprintf(
             '%s->p(%s=%s->i(\\%s::class)%s)',
             $this->hydratorVariable(),
-            $objectVariable,
+            $placeholder,
             $this->hydratorVariable(),
             $object::class,
             $this->dataArgument($this->exportObjectData($object)),
@@ -230,5 +205,21 @@ final class Exporter
     private function dataArgument(string $data): string
     {
         return $data === '[]' ? '' : ',' . $data;
+    }
+
+    /**
+     * @return non-empty-string
+     */
+    private function nextObjectVariable(): string
+    {
+        $index = \count($this->objectVariablesById);
+        $base63Index = '';
+
+        do {
+            $base63Index = self::OBJECT_VARIABLE_ALPHABET[$index % 63] . $base63Index;
+            $index = intdiv($index, 63);
+        } while ($index > 0);
+
+        return '$o' . $base63Index;
     }
 }
