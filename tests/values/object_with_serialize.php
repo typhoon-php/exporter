@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace class_with_serialize;
+namespace object_with_serialize;
 
 final class A
 {

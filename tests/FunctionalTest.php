@@ -44,7 +44,8 @@ final class FunctionalTest extends TestCase
         yield 'DatePeriod' => [require_once __DIR__ . '/values/date_period.php'];
 
         yield 'object with different properties' => [require_once __DIR__ . '/values/object_with_different_properties.php'];
-        yield 'object with serialize' => [require_once __DIR__ . '/values/object_with_serialize.php'];
+        yield 'object with __serialize' => [require_once __DIR__ . '/values/object_with_serialize.php'];
+        yield 'object with __sleep' => [require_once __DIR__ . '/values/object_with_sleep.php'];
         yield 'self referencing object' => [require_once __DIR__ . '/values/self_referencing_object.php'];
     }
 

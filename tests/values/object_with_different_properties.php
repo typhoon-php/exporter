@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace class_with_inheritance;
+namespace object_with_different_properties;
 
 class A
 {
