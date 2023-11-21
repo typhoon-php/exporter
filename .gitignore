@@ -1,5 +1,6 @@
+/var/
 /vendor/
 /.php-cs-fixer.php
-/infection.json
-/phpstan.neon
+/infection.json5
+/phpunit.xml
 /psalm.xml

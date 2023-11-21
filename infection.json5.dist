@@ -9,5 +9,5 @@
     "mutators": {
         "@default": true
     },
-    "minMsi": 67
+    "minMsi": 72
 }
