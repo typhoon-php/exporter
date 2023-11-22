@@ -13,7 +13,7 @@ final class Exporter
 
     private bool $hydratorInitialized = false;
 
-    private \SplObjectStorage $objects;
+    private readonly \SplObjectStorage $objects;
 
     /**
      * @var array<int, non-empty-string>
