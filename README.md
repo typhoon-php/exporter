@@ -20,5 +20,5 @@ $exported = Exporter::export($value);
 
 file_put_contents('code.php', '<?php return '.$exported.';');
 
-\assert(require_once 'code.php' == $value);
+\assert($value == require_once 'code.php');
 ```
